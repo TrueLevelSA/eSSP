@@ -5,11 +5,11 @@ from ctypes import (
     c_ulonglong,
     byref,
 )
-import os
 from time import sleep
 
 from six.moves import queue
 
+from . import C_LIBRARY
 from . import actions
 from .ctypes import (
     Ssp6ChannelData,
@@ -23,10 +23,6 @@ from .constants import Status, FailureStatus
 class eSSP:
     '''Encrypted Smiley Secure Protocol Class'''
 
-    C_LIBRARY = cdll.LoadLibrary(
-        os.path.join(os.path.dirname(__file__), 'libessp.so'),
-    )
-
     def __init__(self, com_port, ssp_address='0', nv11=False, debug=False):
         self.debug = debug
         self.nv11 = nv11
@@ -36,7 +32,7 @@ class eSSP:
 
         # There can't be 9999 notes in the storage
         self.response_data['getnoteamount_response'] = 9999
-        self.sspC = eSSP.C_LIBRARY.ssp_init(
+        self.sspC = C_LIBRARY.ssp_init(
             com_port.encode(),
             ssp_address.encode(),
             debug,
@@ -45,7 +41,7 @@ class eSSP:
         setup_req = Ssp6SetupRequestData()
 
         # Check if the validator is present
-        if eSSP.C_LIBRARY.ssp6_sync(self.sspC) != Status.SSP_RESPONSE_OK.value:
+        if C_LIBRARY.ssp6_sync(self.sspC) != Status.SSP_RESPONSE_OK.value:
             self.print_debug('No validator found')
             self.close()
             raise Exception('No validator found')
@@ -53,7 +49,7 @@ class eSSP:
             self.print_debug('Validator found!')
 
         # Try to setup encryption
-        if eSSP.C_LIBRARY.ssp6_setup_encryption(
+        if C_LIBRARY.ssp6_setup_encryption(
                     self.sspC,
                     c_ulonglong(0x123456701234567),
                 ) == Status.SSP_RESPONSE_OK.value:
@@ -62,17 +58,17 @@ class eSSP:
             self.print_debug('Encryption failed')
 
         # Checking the version, make sure we are using ssp version 6
-        if (eSSP.C_LIBRARY.ssp6_host_protocol(self.sspC, 0x06)
+        if (C_LIBRARY.ssp6_host_protocol(self.sspC, 0x06)
                 != Status.SSP_RESPONSE_OK.value):
             self.print_debug(
-                eSSP.C_LIBRARY.ssp6_host_protocol(self.sspC, 0x06),
+                C_LIBRARY.ssp6_host_protocol(self.sspC, 0x06),
             )
             self.print_debug('Host protocol failed')
             self.close()
             raise Exception('Host protocol failed')
 
         # Get some information about the validator
-        if (eSSP.C_LIBRARY.ssp6_setup_request(self.sspC, byref(setup_req))
+        if (C_LIBRARY.ssp6_setup_request(self.sspC, byref(setup_req))
                 != Status.SSP_RESPONSE_OK.value):
             self.print_debug('Setup request failed')
             self.close()
@@ -88,7 +84,7 @@ class eSSP:
             )
 
         # Enable the validator
-        if (eSSP.C_LIBRARY.ssp6_enable(self.sspC)
+        if (C_LIBRARY.ssp6_enable(self.sspC)
                 != Status.SSP_RESPONSE_OK.value):
             self.print_debug('Enable failed')
             self.close()
@@ -96,7 +92,7 @@ class eSSP:
 
         if setup_req.UnitType == 0x03:  # magic number
             for channel in enumerate(setup_req.ChannelData):
-                eSSP.C_LIBRARY.ssp6_set_coinmech_inhibits(
+                C_LIBRARY.ssp6_set_coinmech_inhibits(
                     self.sspC,
                     channel.value,
                     channel.cc,
@@ -105,14 +101,14 @@ class eSSP:
         else:
             if setup_req.UnitType in {0x06, 0x07}:
                 # Enable the payout unit
-                if eSSP.C_LIBRARY.ssp6_enable_payout(
+                if C_LIBRARY.ssp6_enable_payout(
                             self.sspC,
                             setup_req.UnitType,
                         ) != Status.SSP_RESPONSE_OK.value:
                     self.print_debug('Payout enable failed')
 
             # Set the inhibits (enable all note acceptance)
-            if (eSSP.C_LIBRARY.ssp6_set_inhibits(self.sspC, 0xFF, 0xFF)
+            if (C_LIBRARY.ssp6_set_inhibits(self.sspC, 0xFF, 0xFF)
                     != Status.SSP_RESPONSE_OK.value):
                 self.print_debug('Inhibits failed')
                 self.close()
@@ -125,11 +121,11 @@ class eSSP:
     def close(self):
         '''Close the connection'''
         self.reject()
-        eSSP.C_LIBRARY.close_ssp_port()
+        C_LIBRARY.close_ssp_port()
 
     def reject(self):
         '''Reject the bill if there is one'''
-        if eSSP.C_LIBRARY.ssp6_reject(self.sspC) != Status.SSP_RESPONSE_OK:
+        if C_LIBRARY.ssp6_reject(self.sspC) != Status.SSP_RESPONSE_OK:
             self.print_debug('Error to reject bill OR nothing to reject')
 
     def do_actions(self):
@@ -145,26 +141,26 @@ class eSSP:
     def enable_validator(self):
         '''Enable the validator'''
         setup_req = Ssp6SetupRequestData()
-        if eSSP.C_LIBRARY.ssp6_enable(self.sspC) != Status.SSP_RESPONSE_OK:
+        if C_LIBRARY.ssp6_enable(self.sspC) != Status.SSP_RESPONSE_OK:
             self.print_debug('ERROR: Enable failed')
             return
         # SMART Hopper requires different inhibit commands, so use setup
         # request to see if it is an SH
-        if (eSSP.C_LIBRARY.ssp6_setup_request(self.sspC, byref(setup_req))
+        if (C_LIBRARY.ssp6_setup_request(self.sspC, byref(setup_req))
                 != Status.SSP_RESPONSE_OK):
             self.print_debug('Setup request failed')
             return
         if setup_req.UnitType == 0x03:  # Magic number
             # SMART Hopper requires different inhibit commands
             for channel in setup_req.ChannelData:
-                eSSP.C_LIBRARY.ssp6_set_coinmech_inhibits(
+                C_LIBRARY.ssp6_set_coinmech_inhibits(
                     self.sspC,
                     channel.value,
                     channel.cc,
                     Status.ENABLED.value,
                 )
         else:
-            if (eSSP.C_LIBRARY.ssp6_set_inhibits(self.sspC, 0xFF, 0xFF)
+            if (C_LIBRARY.ssp6_set_inhibits(self.sspC, 0xFF, 0xFF)
                     != Status.SSP_RESPONSE_OK):  # Magic numbers here too
                 self.print_debug('Inhibits failed')
 
@@ -179,7 +175,7 @@ class eSSP:
                 self.print_debug(f'Unknown status: {events.event}')
 
             if events.event == Status.SSP_POLL_RESET:
-                if (eSSP.C_LIBRARY.ssp6_host_protocol(self.sspC, 0x06)
+                if (C_LIBRARY.ssp6_host_protocol(self.sspC, 0x06)
                         != Status.SSP_RESPONSE_OK):  # Magic number
                     raise Exception('Host Protocol Failed')
                     self.close()
@@ -225,7 +221,7 @@ class eSSP:
                 self.print_debug(FailureStatus(events.data1))
                 if events.data1 == FailureStatus.COMMAND_RECAL:
                     self.print_debug('Trying to run autocalibration')
-                    eSSP.C_LIBRARY.ssp6_run_calibration(self.sspC)
+                    C_LIBRARY.ssp6_run_calibration(self.sspC)
 
             self.events.append((0, 0, events.event))
         self.events.append((0, 0, Status.NO_EVENT))
@@ -233,7 +229,7 @@ class eSSP:
     def system_loop(self):
         '''Looping to get the alive signal (mandatory in eSSP6)'''
         while True:
-            rsp_status = eSSP.C_LIBRARY.ssp6_poll(
+            rsp_status = C_LIBRARY.ssp6_poll(
                 self.sspC,
                 byref(self.poll),
             )
@@ -246,7 +242,7 @@ class eSSP:
                     if rsp_status == 0xFA:
                         # The self has responded with key not set, so we should
                         # try to negotiate one
-                        if eSSP.C_LIBRARY.ssp6_setup_encryption(
+                        if C_LIBRARY.ssp6_setup_encryption(
                                     self.sspC,
                                     c_ulonglong(0x123456701234567),
                                 ) == Status.SSP_RESPONSE_OK:
@@ -301,7 +297,7 @@ class eSSP:
 
     def reset(self):
         self.print_debug('Starting reset')
-        eSSP.C_LIBRARY.ssp6_reset(self.sspC)
+        C_LIBRARY.ssp6_reset(self.sspC)
         self.print_debug('Reset complete')
 
     def nv11_payout_next_note(self):
