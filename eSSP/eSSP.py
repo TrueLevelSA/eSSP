@@ -1,58 +1,23 @@
 # !/usr/bin/env python3
 import threading
 from ctypes import (
-    Structure,
-    c_ubyte,
-    c_uint,
-    c_char,
-    c_ulong,
+    cdll,
     c_ulonglong,
     byref,
-    POINTER,
-    cast,
-    cdll,
 )
 import os
 from time import sleep
 
 from six.moves import queue
 
-from .constants import Status, FailureStatus, Actions
-
-
-class Ssp6ChannelData(Structure):
-    _fields_ = [
-        ('security', c_ubyte),
-        ('value', c_uint),
-        ('cc', c_char * 4),
-    ]
-
-
-class Ssp6SetupRequestData(Structure):
-    _fields_ = [
-        ('UnitType', c_ubyte),
-        ('FirmwareVersion', c_char * 5),
-        ('NumberOfChannels', c_uint),
-        ('ChannelData', Ssp6ChannelData * 20),
-        ('RealValueMultiplier', c_ulong),
-        ('ProtocolVersion', c_ubyte),
-    ]
-
-
-class SspPollEvent6(Structure):
-    _fields_ = [
-        ('event', c_ubyte),
-        ('data1', c_ulong),
-        ('data2', c_ulong),
-        ('cc', c_char * 4),
-    ]
-
-
-class SspPollData6(Structure):
-    _fields_ = [
-        ('events', SspPollEvent6 * 20),
-        ('event_count', c_ubyte),
-    ]
+from . import actions
+from .ctypes import (
+    Ssp6ChannelData,
+    Ssp6SetupRequestData,
+    SspPollEvent6,
+    SspPollData6,
+)
+from .constants import Status, FailureStatus
 
 
 class eSSP:
@@ -66,7 +31,6 @@ class eSSP:
         self.debug = debug
         self.nv11 = nv11
         self.actions = queue.Queue()
-        self.actions_args = {}
         self.response_data = {}
         self.events = []
 
@@ -172,114 +136,7 @@ class eSSP:
         while not self.actions.empty():
             action = self.actions.get()
             self.print_debug(action.debug_message)
-
-            if action == Actions.ROUTE_TO_CASHBOX:
-                if eSSP.C_LIBRARY.ssp6_set_route(
-                            self.sspC,
-                            self.actions_args['routec_amount'],
-                            self.actions_args['routec_currency'],
-                            Status.ENABLED.value,
-                        ) != Status.SSP_RESPONSE_OK:
-                    self.print_debug('ERROR: Route to cashbox failed')
-
-            elif action == Actions.ROUTE_TO_STORAGE:
-                if eSSP.C_LIBRARY.ssp6_set_route(
-                            self.sspC,
-                            self.actions_args['routes_amount'],
-                            self.actions_args['routes_currency'],
-                            Status.DISABLED.value,
-                        ) != Status.SSP_RESPONSE_OK:
-                    self.print_debug('ERROR: Route to storage failed')
-
-            elif action == Actions.PAYOUT:
-                if eSSP.C_LIBRARY.ssp6_payout(
-                            self.sspC,
-                            self.actions_args['payout_amount'],
-                            self.actions_args['payout_currency'],
-                            Status.SSP6_OPTION_BYTE_DO.value,
-                        ) != Status.SSP_RESPONSE_OK:
-                    self.print_debug('ERROR: Payout failed')
-                    # Checking the error
-                    response_data = cast(
-                        eSSP.C_LIBRARY.Status.SSP_get_response_data(self.sspC),
-                        POINTER(c_ubyte),
-                    )
-                    if response_data[1] == Status.SMART_PAYOUT_NOT_ENOUGH:
-                        self.print_debug(Status.SMART_PAYOUT_NOT_ENOUGH)
-                    elif response_data[1] == Status.SMART_PAYOUT_EXACT_AMOUNT:
-                        self.print_debug(Status.SMART_PAYOUT_EXACT_AMOUNT)
-                    elif response_data[1] == Status.SMART_PAYOUT_BUSY:
-                        self.print_debug(Status.SMART_PAYOUT_BUSY)
-                    elif response_data[1] == Status.SMART_PAYOUT_DISABLED:
-                        self.print_debug(Status.SMART_PAYOUT_DISABLED)
-
-            elif action == Actions.PAYOUT_NEXT_NOTE_NV11:
-                self.print_debug('Payout next note')
-                setup_req = Ssp6SetupRequestData()
-                if eSSP.C_LIBRARY.ssp6_setup_request(
-                            self.sspC,
-                            byref(setup_req),
-                        ) != Status.SSP_RESPONSE_OK:
-                    self.print_debug('Setup request failed')
-                # Maybe the version, or something (taken from the SDK C code)
-                if setup_req.UnitType != 0x07:
-                    self.print_debug('Payout next note is only valid for NV11')
-                if eSSP.C_LIBRARY.ssp6_payout_note(
-                        self.sspC) != Status.SSP_RESPONSE_OK:
-                    self.print_debug('Payout next note failed')
-
-            elif action == Actions.STACK_NEXT_NOTE_NV11:
-                setup_req = Ssp6SetupRequestData()
-                if eSSP.C_LIBRARY.ssp6_setup_request(
-                            self.sspC,
-                            byref(setup_req),
-                        ) != Status.SSP_RESPONSE_OK:
-                    self.print_debug('Setup request failed')
-                # Maybe the version, or something (taken from the SDK C code)
-                if setup_req.UnitType != 0x07:
-                    self.print_debug('Payout next note is only valid for NV11')
-                if (eSSP.C_LIBRARY.ssp6_stack_note(self.sspC)
-                        != Status.SSP_RESPONSE_OK):
-                    self.print_debug('Stack next note failed')
-
-            elif action == Actions.DISABLE_VALIDATOR:
-                if (eSSP.C_LIBRARY.ssp6_disable(self.sspC)
-                        != Status.SSP_RESPONSE_OK):
-                    self.print_debug('ERROR: Disable failed')
-
-            elif action == Actions.DISABLE_PAYOUT:
-                if (eSSP.C_LIBRARY.ssp6_disable_payout(self.sspC)
-                        != Status.SSP_RESPONSE_OK):
-                    self.print_debug('ERROR: Disable payout failed')
-
-            elif action == Actions.GET_NOTE_AMOUNT:
-                if eSSP.C_LIBRARY.ssp6_get_note_amount(
-                            self.sspC,
-                            self.actions_args['getnoteamount_amount'],
-                            self.actions_args['getnoteamount_currency'],
-                        ) != Status.SSP_RESPONSE_OK:
-                    self.print_debug('ERROR: Can''t read the note amount')
-                    # There can't be 9999 notes
-                    self.response_data['getnoteamount_response'] = 9999
-                else:
-                    response_data = cast(
-                        eSSP.C_LIBRARY.Status.SSP_get_response_data(
-                            self.sspC), POINTER(c_ubyte))
-                    self.print_debug(response_data[1])
-                    # The number of note
-                    self.response_data['getnoteamount_response'] = (
-                        response_data[1]
-                    )
-
-            elif action == Actions.EMPTY_STORAGE:
-                if (eSSP.C_LIBRARY.ssp6_empty(self.sspC)
-                        != Status.SSP_RESPONSE_OK):
-                    self.print_debug('ERROR: Can''t empty the storage')
-                else:
-                    self.print_debug('Emptying, please wait...')
-
-            else:
-                self.print_debug('Unknown action')
+            action(self)
 
     def print_debug(self, text):
         if self.debug:
@@ -410,52 +267,37 @@ class eSSP:
         self.events.pop(len(self.events) - 1)
         return event
 
-    def __action_helper(self, amount, currency, action, prefix):
-        self.actions.put(action)
-        self.actions_args[f'{prefix}_amount'] = amount * 100
-        # TODO: This is one action at time, also,
-        # i think that the validator can receive one type of command at time,
-        # so TO IMPLEMENT: user can send multiple request without waiting,
-        # but we store them and process them every time we send commands to the
-        # validator (0.5, 0.5, 0.5, etc.)
-        self.actions_args[f'{prefix}_currency'] = (
-            currency.upper().encode()
-        )
-
     def set_route_cashbox(self, amount, currency='CHF'):
         '''Will set the route of <amount> in the cashbox
         NV11: Will set the route of <= amount in the cashbox
         '''
-        self.__action_helper(
-            amount,
-            currency,
-            Actions.ROUTE_TO_CASHBOX,
-            'routec',
-        )
+        self.actions.put(actions.RouteToCashbox(
+            amount=amount * 100,
+            currency=currency,
+        ))
 
     def set_route_storage(self, amount, currency='CHF'):
         '''Set the bills <amount> in the storage
         NV11: Set the bills <= amount in the storage
         '''
-        self.__action_helper(
-            amount,
-            currency,
-            Actions.ROUTE_TO_STORAGE,
-            'routes',
-        )
+        self.actions.put(actions.RouteToStorage(
+            amount=amount * 100,
+            currency=currency,
+        ))
 
     def payout(self, amount, currency='CHF'):
         '''Payout note(s) for completing the amount passed in parameter'''
-        self.__action_helper(amount, currency, Actions.PAYOUT, 'payout')
+        self.actions.put(actions.Payout(
+            amount=amount * 100,
+            currency=currency,
+        ))
 
     def get_note_amount(self, amount, currency='CHF'):
         '''Get the numbers of note of value X in the smart payout device'''
-        self.__action_helper(
-            amount,
-            currency,
-            Actions.GET_NOTE_AMOUNT,
-            'getnoteamount',
-        )
+        self.actions.put(actions.GetNoteAmount(
+            amount=amount * 100,
+            currency=currency,
+        ))
 
     def reset(self):
         self.print_debug('Starting reset')
@@ -463,16 +305,16 @@ class eSSP:
         self.print_debug('Reset complete')
 
     def nv11_payout_next_note(self):
-        self.actions.put(Actions.PAYOUT_NEXT_NOTE_NV11)
+        self.actions.put(actions.PayoutNextNoteNv11())
 
     def nv11_stack_next_note(self):
-        self.actions.put(Actions.STACK_NEXT_NOTE_NV11)
+        self.actions.put(actions.StackNextNoteNv11())
 
     def empty_storage(self):
-        self.actions.put(Actions.EMPTY_STORAGE)
+        self.actions.put(actions.EmptyStorage())
 
     def disable_payout(self):
-        self.actions.put(Actions.DISABLE_PAYOUT)
+        self.actions.put(actions.DisablePayout())
 
     def disable_validator(self):
-        self.actions.put(Actions.DISABLE_VALIDATOR)
+        self.actions.put(actions.DisableValidator())

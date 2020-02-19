@@ -89,29 +89,3 @@ class FailureStatus(Enum):
 
     def __ne__(self, other):
         return self.value != other
-
-
-class Actions(Enum):
-    _init_ = 'value', 'debug_message'
-
-    ROUTE_TO_CASHBOX = 0, 'Route to cashbox'
-    ROUTE_TO_STORAGE = 1, 'Route to storage'
-    PAYOUT = 2, 'Payout'
-    PAYOUT_NEXT_NOTE_NV11 = 3, 'Payout next note'
-    STACK_NEXT_NOTE_NV11 = 4, 'Stack next note'
-    DISABLE_VALIDATOR = 5, 'Disable validator'
-    DISABLE_PAYOUT = 6, 'Disable payout'
-    GET_NOTE_AMOUNT = 7, 'Get note amount'
-    EMPTY_STORAGE = 8, 'Empty storage & cleaning indexes'
-
-    def __int__(self):
-        return self.value
-
-    def __str__(self):
-        return self.debug_message
-
-    def __eq__(self, other):
-        return self.value == other
-
-    def __ne__(self, other):
-        return self.value != other
