@@ -223,7 +223,7 @@ class eSSP:
             elif events.event == Status.SSP_POLL_CALIBRATION_FAIL:
                 self.print_debug('Calibration fail:')
                 self.print_debug(FailureStatus(events.data1))
-                if events.data1 == Status.COMMAND_RECAL:
+                if events.data1 == FailureStatus.COMMAND_RECAL:
                     self.print_debug('Trying to run autocalibration')
                     eSSP.C_LIBRARY.ssp6_run_calibration(self.sspC)
 
