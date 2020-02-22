@@ -1,8 +1,4 @@
-from ctypes import cdll
-import os
-
-C_LIBRARY = cdll.LoadLibrary(
-    os.path.join(os.path.dirname(__file__), 'libessp.so'),
-)
+# C_LIBRARY must be imported before eSSP as eSSP depends on the lib.
+from .clib import C_LIBRARY
 
 from .eSSP import eSSP

@@ -11,7 +11,7 @@ from six.moves import queue
 
 from . import C_LIBRARY
 from . import actions
-from .ctypes import (
+from .clib import (
     Ssp6ChannelData,
     Ssp6SetupRequestData,
     SspPollEvent6,

@@ -6,7 +6,7 @@ from ctypes import (
 )
 
 from . import C_LIBRARY
-from .ctypes import Ssp6SetupRequestData
+from .clib import Ssp6SetupRequestData
 from .constants import Status
 
 
