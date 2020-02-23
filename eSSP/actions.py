@@ -67,7 +67,7 @@ class Payout(Action):
             essp.print_debug('ERROR: Payout failed')
             # Checking the error
             response_data = cast(
-                C_LIBRARY.Status.SSP_get_response_data(essp.sspC),
+                C_LIBRARY.ssp_get_response_data(essp.sspC),
                 POINTER(c_ubyte),
             )
             if response_data[1] == Status.SMART_PAYOUT_NOT_ENOUGH:
@@ -147,7 +147,7 @@ class GetNoteAmount(Action):
             essp.response_data['getnoteamount_response'] = 9999
         else:
             response_data = cast(
-                C_LIBRARY.Status.SSP_get_response_data(essp.sspC),
+                C_LIBRARY.ssp_get_response_data(essp.sspC),
                 POINTER(c_ubyte),
             )
             essp.print_debug(response_data[1])
