@@ -137,5 +137,11 @@ SSP_RESPONSE_ENUM ssp6_set_coinmech_inhibits(
         unsigned int value,
         const char* cc,
         enum channel_state state);
+SSP_RESPONSE_ENUM ssp6_empty(SSP_COMMAND* sspC, const char type);
+SSP_RESPONSE_ENUM ssp6_get_note_amount(
+        SSP_COMMAND* sspC,
+        const int value,
+        const char* cc);
+SSP_RESPONSE_ENUM ssp6_reject(SSP_COMMAND* sspC);
 
 #endif
