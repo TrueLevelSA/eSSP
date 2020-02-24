@@ -53,6 +53,10 @@ class Status(Enum):
     SMART_PAYOUT_BUSY = 0x03, 'Smart payout is busy'
     SMART_PAYOUT_DISABLED = 0x04, 'Smart payout is disabled'
 
+    @classmethod
+    def from_param(cls, obj):
+        return int(obj)
+
     def __int__(self):
         return self.value
 
@@ -60,10 +64,13 @@ class Status(Enum):
         return self.debug_message
 
     def __eq__(self, other):
-        return self.value == other
+        try:
+            return self.value == other.value
+        except AttributeError:
+            return self.value == other
     
     def __ne__(self, other):
-        return self.value != other
+        return not self == other
 
 
 class FailureStatus(Enum):

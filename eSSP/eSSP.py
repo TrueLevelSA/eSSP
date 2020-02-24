@@ -41,7 +41,7 @@ class eSSP:
         setup_req = Ssp6SetupRequestData()
 
         # Check if the validator is present
-        if C_LIBRARY.ssp6_sync(self.sspC) != Status.SSP_RESPONSE_OK.value:
+        if C_LIBRARY.ssp6_sync(self.sspC) != Status.SSP_RESPONSE_OK:
             self.print_debug('No validator found')
             self.close()
             raise Exception('No validator found')
@@ -52,14 +52,14 @@ class eSSP:
         if C_LIBRARY.ssp6_setup_encryption(
                     self.sspC,
                     c_ulonglong(0x123456701234567),
-                ) == Status.SSP_RESPONSE_OK.value:
+                ) == Status.SSP_RESPONSE_OK:
             self.print_debug('Encryption setup')
         else:
             self.print_debug('Encryption failed')
 
         # Checking the version, make sure we are using ssp version 6
         if (C_LIBRARY.ssp6_host_protocol(self.sspC, 0x06)
-                != Status.SSP_RESPONSE_OK.value):
+                != Status.SSP_RESPONSE_OK):
             self.print_debug(
                 C_LIBRARY.ssp6_host_protocol(self.sspC, 0x06),
             )
@@ -69,7 +69,7 @@ class eSSP:
 
         # Get some information about the validator
         if (C_LIBRARY.ssp6_setup_request(self.sspC, byref(setup_req))
-                != Status.SSP_RESPONSE_OK.value):
+                != Status.SSP_RESPONSE_OK):
             self.print_debug('Setup request failed')
             self.close()
             raise Exception('Setup request failed')
@@ -85,7 +85,7 @@ class eSSP:
 
         # Enable the validator
         if (C_LIBRARY.ssp6_enable(self.sspC)
-                != Status.SSP_RESPONSE_OK.value):
+                != Status.SSP_RESPONSE_OK):
             self.print_debug('Enable failed')
             self.close()
             raise Exception('Enable failed')
@@ -96,7 +96,7 @@ class eSSP:
                     self.sspC,
                     channel.value,
                     channel.cc,
-                    Status.ENABLED.value,
+                    Status.ENABLED,
                 )
         else:
             if setup_req.UnitType in {0x06, 0x07}:
@@ -104,12 +104,12 @@ class eSSP:
                 if C_LIBRARY.ssp6_enable_payout(
                             self.sspC,
                             setup_req.UnitType,
-                        ) != Status.SSP_RESPONSE_OK.value:
+                        ) != Status.SSP_RESPONSE_OK:
                     self.print_debug('Payout enable failed')
 
             # Set the inhibits (enable all note acceptance)
             if (C_LIBRARY.ssp6_set_inhibits(self.sspC, 0xFF, 0xFF)
-                    != Status.SSP_RESPONSE_OK.value):
+                    != Status.SSP_RESPONSE_OK):
                 self.print_debug('Inhibits failed')
                 self.close()
                 raise Exception('Inhibits failed')
@@ -157,7 +157,7 @@ class eSSP:
                     self.sspC,
                     channel.value,
                     channel.cc,
-                    Status.ENABLED.value,
+                    Status.ENABLED,
                 )
         else:
             if (C_LIBRARY.ssp6_set_inhibits(self.sspC, 0xFF, 0xFF)

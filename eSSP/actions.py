@@ -36,7 +36,7 @@ class RouteToCashbox(Action):
                     essp.sspC,
                     kwargs['amount'],
                     kwargs['currency'],
-                    Status.ENABLED.value,
+                    Status.ENABLED,
                 ) != Status.SSP_RESPONSE_OK:
             essp.print_debug('ERROR: Route to cashbox failed')
 
@@ -49,7 +49,7 @@ class RouteToStorage(Action):
                     essp.sspC,
                     kwargs['amount'],
                     kwargs['currency'],
-                    Status.DISABLED.value,
+                    Status.DISABLED,
                 ) != Status.SSP_RESPONSE_OK:
             essp.print_debug('ERROR: Route to storage failed')
 
@@ -62,7 +62,7 @@ class Payout(Action):
                     essp.sspC,
                     kwargs['amount'],
                     kwargs['currency'],
-                    Status.SSP6_OPTION_BYTE_DO.value,
+                    Status.SSP6_OPTION_BYTE_DO,
                 ) != Status.SSP_RESPONSE_OK:
             essp.print_debug('ERROR: Payout failed')
             # Checking the error

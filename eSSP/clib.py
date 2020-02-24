@@ -74,10 +74,21 @@ class SspResponseEnum(Enum):
     SSP_RESPONSE_KEY_NOT_SET = 0xFA
     SSP_RESPONSE_TIMEOUT = 0xFF
 
+    @classmethod
+    def from_param(cls, obj):
+        return int(obj)
+
 
 class SspChannelState(Enum):
     DISABLED = 0x00
     ENABLED = 0x01
+
+    @classmethod
+    def from_param(cls, obj):
+        '''from_param is required for ctypes to pass an enum to a c
+        function.
+        '''
+        return int(obj)
 
 
 class SspFullKey(Structure):
