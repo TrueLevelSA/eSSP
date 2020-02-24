@@ -17,6 +17,10 @@ from ctypes import (
 )
 import os
 
+import faulthandler
+
+faulthandler.enable()
+
 C_LIBRARY = cdll.LoadLibrary(
     os.path.join(os.path.dirname(__file__), 'libessp.so'),
 )
