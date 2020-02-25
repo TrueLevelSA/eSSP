@@ -35,8 +35,8 @@ class RouteToCashbox(Action):
         if C_LIBRARY.ssp6_set_route(
                     essp.sspC,
                     kwargs['amount'],
-                    kwargs['currency'],
-                    Status.ENABLED,
+                    kwargs['currency'].encode(),
+                    Status.ENABLED.value,
                 ) != Status.SSP_RESPONSE_OK:
             essp.print_debug('ERROR: Route to cashbox failed')
 
@@ -48,8 +48,8 @@ class RouteToStorage(Action):
         if C_LIBRARY.ssp6_set_route(
                     essp.sspC,
                     kwargs['amount'],
-                    kwargs['currency'],
-                    Status.DISABLED,
+                    kwargs['currency'].encode(),
+                    Status.DISABLED.value,
                 ) != Status.SSP_RESPONSE_OK:
             essp.print_debug('ERROR: Route to storage failed')
 
@@ -61,8 +61,8 @@ class Payout(Action):
         if C_LIBRARY.ssp6_payout(
                     essp.sspC,
                     kwargs['amount'],
-                    kwargs['currency'],
-                    Status.SSP6_OPTION_BYTE_DO,
+                    kwargs['currency'].encode(),
+                    Status.SSP6_OPTION_BYTE_DO.value,
                 ) != Status.SSP_RESPONSE_OK:
             essp.print_debug('ERROR: Payout failed')
             # Checking the error
@@ -140,7 +140,7 @@ class GetNoteAmount(Action):
         if C_LIBRARY.ssp6_get_note_amount(
                     essp.sspC,
                     kwargs['amount'],
-                    kwargs['currency'],
+                    kwargs['currency'].encode(),
                 ) != Status.SSP_RESPONSE_OK:
             essp.print_debug('ERROR: Can''t read the note amount')
             # There can't be 9999 notes
@@ -159,7 +159,12 @@ class EmptyStorage(Action):
     debug_message = 'Empty storage & cleaning indexes'
 
     def function(self, essp, **kwargs):
-        if C_LIBRARY.ssp6_empty(essp.sspC) != Status.SSP_RESPONSE_OK:
+        # Fixme: ssp6_empty takes a char named 'type' that seems to add a command
+        # with hex 0x00 when its value is 0x07. The documentation makes no
+        # mention of this that can be found. Since this function was called with
+        # this mysterious argument missing, it was decided to call it with 0x00
+        # and avoid adding a command that doesn't seem to exist.
+        if C_LIBRARY.ssp6_empty(essp.sspC, 0x00) != Status.SSP_RESPONSE_OK:
             essp.print_debug('ERROR: Can''t empty the storage')
         else:
             essp.print_debug('Emptying, please wait...')
