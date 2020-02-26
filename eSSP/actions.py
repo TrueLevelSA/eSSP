@@ -1,9 +1,4 @@
-from ctypes import (
-    POINTER,
-    cast,
-    byref,
-    c_ubyte,
-)
+from ctypes import byref
 
 from . import C_LIBRARY
 from .clib import Ssp6SetupRequestData
@@ -66,10 +61,7 @@ class Payout(Action):
                 ) != Status.SSP_RESPONSE_OK:
             essp.print_debug('ERROR: Payout failed')
             # Checking the error
-            response_data = cast(
-                C_LIBRARY.ssp_get_response_data(essp.sspC),
-                POINTER(c_ubyte),
-            )
+            response_data = essp.sspC.contents.ResponseData
             if response_data[1] == Status.SMART_PAYOUT_NOT_ENOUGH:
                 essp.print_debug(Status.SMART_PAYOUT_NOT_ENOUGH)
             elif response_data[1] == Status.SMART_PAYOUT_EXACT_AMOUNT:
