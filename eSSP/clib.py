@@ -200,5 +200,5 @@ define_function(
 )
 define_function('ssp6_stack_note', SspResponseEnum, CommandPointer)
 define_function('ssp6_sync', SspResponseEnum, CommandPointer)
-define_function('ssp_get_response_data', SspResponseEnum, CommandPointer)
+define_function('ssp_get_response_data', c_char_p, CommandPointer)
 define_function('ssp_init', CommandPointer, c_char_p, c_char_p, c_int)
