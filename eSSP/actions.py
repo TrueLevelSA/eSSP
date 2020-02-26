@@ -146,10 +146,10 @@ class GetNoteAmount(Action):
             # There can't be 9999 notes
             essp.response_data['getnoteamount_response'] = 9999
         else:
-            response_data = C_LIBRARY.ssp_get_response_data(essp.sspC)
-            essp.print_debug(response_data[1])
             # The number of note
-            essp.response_data['getnoteamount_response'] = response_data[1]
+            essp.response_data['getnoteamount_response'] = (
+                essp.sspC.contents.ResponseData[1]
+            )
 
 
 class EmptyStorage(Action):
