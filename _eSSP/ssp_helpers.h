@@ -83,7 +83,7 @@ typedef struct
 
 enum calibration_failures
 {
-    NO_FAILUE = 0x00,
+    NO_FAILURE = 0x00,
     SENSOR_FLAP = 0x01,
     SENSOR_EXIT = 0x02,
     SENSOR_COIL1 = 0x03,

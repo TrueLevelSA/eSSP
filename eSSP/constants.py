@@ -73,7 +73,7 @@ class Status(Enum):
 class FailureStatus(Enum):
     _init_ = 'value', 'debug_message'
 
-    NO_FAILUE = 0x00, 'No Failure'
+    NO_FAILURE = 0x00, 'No Failure'
     SENSOR_FLAP = 0x01, 'Optical Sensor Flap'
     SENSOR_EXIT = 0x02, 'Optical Sensor Exit'
     SENSOR_COIL1 = 0x03, 'Coil sensor 1'
