@@ -16,6 +16,7 @@ from .clib import (
     Ssp6SetupRequestData,
     SspPollEvent6,
     SspPollData6,
+    SspResponseEnum
 )
 from .constants import Status, FailureStatus
 
@@ -44,7 +45,7 @@ class eSSP:
         setup_req = Ssp6SetupRequestData()
 
         # Check if the validator is present
-        if C_LIBRARY.ssp6_sync(self.sspC) != Status.SSP_RESPONSE_OK:
+        if C_LIBRARY.ssp6_sync(self.sspC) != SspResponseEnum.SSP_RESPONSE_OK:
             self.print_debug('No validator found')
             self.close()
             raise Exception('No validator found')
@@ -55,14 +56,14 @@ class eSSP:
         if C_LIBRARY.ssp6_setup_encryption(
                     self.sspC,
                     c_ulonglong(0x123456701234567),
-                ) == Status.SSP_RESPONSE_OK:
+                ) == SspResponseEnum.SSP_RESPONSE_OK:
             self.print_debug('Encryption setup')
         else:
             self.print_debug('Encryption failed')
 
         # Checking the version, make sure we are using ssp version 6
         if (C_LIBRARY.ssp6_host_protocol(self.sspC, 0x06)
-                != Status.SSP_RESPONSE_OK):
+                != SspResponseEnum.SSP_RESPONSE_OK):
             self.print_debug(
                 C_LIBRARY.ssp6_host_protocol(self.sspC, 0x06),
             )
@@ -72,7 +73,7 @@ class eSSP:
 
         # Get some information about the validator
         if (C_LIBRARY.ssp6_setup_request(self.sspC, byref(setup_req))
-                != Status.SSP_RESPONSE_OK):
+                != SspResponseEnum.SSP_RESPONSE_OK):
             self.print_debug('Setup request failed')
             self.close()
             raise Exception('Setup request failed')
@@ -88,7 +89,7 @@ class eSSP:
 
         # Enable the validator
         if (C_LIBRARY.ssp6_enable(self.sspC)
-                != Status.SSP_RESPONSE_OK):
+                != SspResponseEnum.SSP_RESPONSE_OK):
             self.print_debug('Enable failed')
             self.close()
             raise Exception('Enable failed')
@@ -107,12 +108,12 @@ class eSSP:
                 if C_LIBRARY.ssp6_enable_payout(
                             self.sspC,
                             setup_req.UnitType,
-                        ) != Status.SSP_RESPONSE_OK:
+                        ) != SspResponseEnum.SSP_RESPONSE_OK:
                     self.print_debug('Payout enable failed')
 
             # Set the inhibits (enable all note acceptance)
             if (C_LIBRARY.ssp6_set_inhibits(self.sspC, 0xFF, 0xFF)
-                    != Status.SSP_RESPONSE_OK):
+                    != SspResponseEnum.SSP_RESPONSE_OK):
                 self.print_debug('Inhibits failed')
                 self.close()
                 raise Exception('Inhibits failed')
@@ -128,7 +129,7 @@ class eSSP:
 
     def reject(self):
         '''Reject the bill if there is one'''
-        if C_LIBRARY.ssp6_reject(self.sspC) != Status.SSP_RESPONSE_OK:
+        if C_LIBRARY.ssp6_reject(self.sspC) != SspResponseEnum.SSP_RESPONSE_OK:
             self.print_debug('Error to reject bill OR nothing to reject')
 
     def do_actions(self):
@@ -144,13 +145,13 @@ class eSSP:
     def enable_validator(self):
         '''Enable the validator'''
         setup_req = Ssp6SetupRequestData()
-        if C_LIBRARY.ssp6_enable(self.sspC) != Status.SSP_RESPONSE_OK:
+        if C_LIBRARY.ssp6_enable(self.sspC) != SspResponseEnum.SSP_RESPONSE_OK:
             self.print_debug('ERROR: Enable failed')
             return
         # SMART Hopper requires different inhibit commands, so use setup
         # request to see if it is an SH
         if (C_LIBRARY.ssp6_setup_request(self.sspC, byref(setup_req))
-                != Status.SSP_RESPONSE_OK):
+                != SspResponseEnum.SSP_RESPONSE_OK):
             self.print_debug('Setup request failed')
             return
         if setup_req.UnitType == 0x03:  # Magic number
@@ -164,7 +165,7 @@ class eSSP:
                 )
         else:
             if (C_LIBRARY.ssp6_set_inhibits(self.sspC, 0xFF, 0xFF)
-                    != Status.SSP_RESPONSE_OK):  # Magic numbers here too
+                    != SspResponseEnum.SSP_RESPONSE_OK):  # Magic numbers here
                 self.print_debug('Inhibits failed')
 
     def parse_poll(self):
@@ -179,7 +180,7 @@ class eSSP:
 
             if events.event == Status.SSP_POLL_RESET:
                 if (C_LIBRARY.ssp6_host_protocol(self.sspC, 0x06)
-                        != Status.SSP_RESPONSE_OK):  # Magic number
+                        != SspResponseEnum.SSP_RESPONSE_OK):  # Magic number
                     raise Exception('Host Protocol Failed')
                     self.close()
 
@@ -232,30 +233,29 @@ class eSSP:
     def system_loop(self):
         '''Looping to get the alive signal (mandatory in eSSP6)'''
         while True:
-            rsp_status = C_LIBRARY.ssp6_poll(
+            response = C_LIBRARY.ssp6_poll(
                 self.sspC,
                 byref(self.poll),
             )
-            if rsp_status != Status.SSP_RESPONSE_OK:
-                if rsp_status == Status.SSP_RESPONSE_TIMEOUT:
+            if response != SspResponseEnum.SSP_RESPONSE_OK:
+                if response == SspResponseEnum.SSP_RESPONSE_TIMEOUT:
                     self.print_debug('SSP poll timeout')
                     self.close()
                     exit(0)
-                else:
-                    if rsp_status == 0xFA:
-                        # The self has responded with key not set, so we should
-                        # try to negotiate one
-                        if C_LIBRARY.ssp6_setup_encryption(
-                                    self.sspC,
-                                    c_ulonglong(0x123456701234567),
-                                ) == Status.SSP_RESPONSE_OK:
-                            self.print_debug('Encryption setup')
-                        else:
-                            self.print_debug('Encryption failed')
+                elif response == SspResponseEnum.SSP_RESPONSE_KEY_NOT_SET:
+                    # The self has responded with key not set, so we should
+                    # try to negotiate one
+                    if C_LIBRARY.ssp6_setup_encryption(
+                                self.sspC,
+                                c_ulonglong(0x123456701234567),
+                            ) == SspResponseEnum.SSP_RESPONSE_OK:
+                        self.print_debug('Encryption setup')
                     else:
-                        # Not theses two, stop the program
-                        raise Exception(f'SSP poll error {rsp_status}')
-                        exit(1)
+                        self.print_debug('Encryption failed')
+                else:
+                    # Not theses two, stop the program
+                    raise Exception(f'SSP poll error {response}')
+                    exit(1)
             self.parse_poll()
             self.do_actions()
             sleep(0.5)

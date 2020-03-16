@@ -1,7 +1,10 @@
 from ctypes import byref
 
 from . import C_LIBRARY
-from .clib import Ssp6SetupRequestData
+from .clib import (
+    Ssp6SetupRequestData,
+    SspResponseEnum,
+)
 from .constants import Status
 
 
@@ -32,7 +35,7 @@ class RouteToCashbox(Action):
                     kwargs['amount'],
                     kwargs['currency'].encode(),
                     Status.ENABLED.value,
-                ) != Status.SSP_RESPONSE_OK:
+                ) != SspResponseEnum.SSP_RESPONSE_OK:
             essp.print_debug('ERROR: Route to cashbox failed')
 
 
@@ -45,7 +48,7 @@ class RouteToStorage(Action):
                     kwargs['amount'],
                     kwargs['currency'].encode(),
                     Status.DISABLED.value,
-                ) != Status.SSP_RESPONSE_OK:
+                ) != SspResponseEnum.SSP_RESPONSE_OK:
             essp.print_debug('ERROR: Route to storage failed')
 
 
@@ -58,7 +61,7 @@ class Payout(Action):
                     kwargs['amount'],
                     kwargs['currency'].encode(),
                     Status.SSP6_OPTION_BYTE_DO.value,
-                ) != Status.SSP_RESPONSE_OK:
+                ) != SspResponseEnum.SSP_RESPONSE_OK:
             essp.print_debug('ERROR: Payout failed')
             # Checking the error
             response_data = essp.sspC.contents.ResponseData
@@ -81,13 +84,13 @@ class PayoutNextNoteNv11(Action):
         if C_LIBRARY.ssp6_setup_request(
                     essp.sspC,
                     byref(setup_req),
-                ) != Status.SSP_RESPONSE_OK:
+                ) != SspResponseEnum.SSP_RESPONSE_OK:
             essp.print_debug('Setup request failed')
         # Maybe the version, or something (taken from the SDK C code)
         if setup_req.UnitType != 0x07:
             essp.print_debug('Payout next note is only valid for NV11')
         if C_LIBRARY.ssp6_payout_note(
-                essp.sspC) != Status.SSP_RESPONSE_OK:
+                essp.sspC) != SspResponseEnum.SSP_RESPONSE_OK:
             essp.print_debug('Payout next note failed')
 
 
@@ -99,12 +102,13 @@ class StackNextNoteNv11(Action):
         if C_LIBRARY.ssp6_setup_request(
                     essp.sspC,
                     byref(setup_req),
-                ) != Status.SSP_RESPONSE_OK:
+                ) != SspResponseEnum.SSP_RESPONSE_OK:
             essp.print_debug('Setup request failed')
         # Maybe the version, or something (taken from the SDK C code)
         if setup_req.UnitType != 0x07:
             essp.print_debug('Payout next note is only valid for NV11')
-        if C_LIBRARY.ssp6_stack_note(essp.sspC) != Status.SSP_RESPONSE_OK:
+        if (C_LIBRARY.ssp6_stack_note(essp.sspC)
+                != SspResponseEnum.SSP_RESPONSE_OK):
             essp.print_debug('Stack next note failed')
 
 
@@ -112,7 +116,8 @@ class DisableValidator(Action):
     debug_message = 'Disable validator'
 
     def function(self, essp, **kwargs):
-        if C_LIBRARY.ssp6_disable(essp.sspC) != Status.SSP_RESPONSE_OK:
+        if (C_LIBRARY.ssp6_disable(essp.sspC)
+                != SspResponseEnum.SSP_RESPONSE_OK):
             essp.print_debug('ERROR: Disable failed')
 
 
@@ -121,7 +126,7 @@ class DisablePayout(Action):
 
     def function(self, essp, **kwargs):
         if (C_LIBRARY.ssp6_disable_payout(essp.sspC)
-                != Status.SSP_RESPONSE_OK):
+                != SspResponseEnum.SSP_RESPONSE_OK):
             essp.print_debug('ERROR: Disable payout failed')
 
 
@@ -133,7 +138,7 @@ class GetNoteAmount(Action):
                     essp.sspC,
                     kwargs['amount'],
                     kwargs['currency'].encode(),
-                ) != Status.SSP_RESPONSE_OK:
+                ) != SspResponseEnum.SSP_RESPONSE_OK:
             essp.print_debug('ERROR: Can''t read the note amount')
             # There can't be 9999 notes
             essp.response_data['getnoteamount_response'] = 9999
@@ -153,7 +158,8 @@ class EmptyStorage(Action):
         # mention of this that can be found. Since this function was called with
         # this mysterious argument missing, it was decided to call it with 0x00
         # and avoid adding a command that doesn't seem to exist.
-        if C_LIBRARY.ssp6_empty(essp.sspC, 0x00) != Status.SSP_RESPONSE_OK:
+        if (C_LIBRARY.ssp6_empty(essp.sspC, 0x00)
+                != SspResponseEnum.SSP_RESPONSE_OK):
             essp.print_debug('ERROR: Can''t empty the storage')
         else:
             essp.print_debug('Emptying, please wait...')

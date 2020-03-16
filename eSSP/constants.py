@@ -4,9 +4,6 @@ from aenum import Enum
 class Status(Enum):
     _init_ = 'value', 'debug_message'
 
-    SSP_RESPONSE_ERROR = 0xFF, 'Error'
-    SSP_RESPONSE_TIMEOUT = 0xFF, 'Timeout'
-    SSP_RESPONSE_OK = 0xF0, 'Ok'
     ENABLED = 0x01, 'Enabled'
     DISABLED = 0x00, 'Disabled'
     SSP_POLL_RESET = 0xF1, 'Poll Reset'
