@@ -37,6 +37,9 @@ class eSSP:
             ssp_address.encode(),
             debug,
         )
+        if not self.sspC:
+            exit(-1)
+
         self.poll = SspPollData6()
         setup_req = Ssp6SetupRequestData()
 
