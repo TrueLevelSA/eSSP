@@ -19,6 +19,7 @@ from .clib import (
     SspResponseEnum
 )
 from .constants import Status, FailureStatus
+from .polls import handle_event
 
 
 class eSSP:
@@ -170,64 +171,8 @@ class eSSP:
 
     def parse_poll(self):
         '''Parse the poll, for getting events'''
-        for events in self.poll.events:
-            try:
-                if events.event != Status.DISABLED:
-                    self.print_debug(Status(events.event))
-
-            except ValueError:
-                self.print_debug(f'Unknown status: {events.event}')
-
-            if events.event == Status.SSP_POLL_RESET:
-                if (C_LIBRARY.ssp6_host_protocol(self.sspC, 0x06)
-                        != SspResponseEnum.SSP_RESPONSE_OK):  # Magic number
-                    raise Exception('Host Protocol Failed')
-                    self.close()
-
-            elif events.event == Status.SSP_POLL_READ:
-                if events.data1 > 0:
-                    self.print_debug(
-                        f'Note Read {events.data1} {events.cc.decode()}',
-                    )
-                    self.events.append(
-                            (events.data1, events.cc.decode(), events.event),
-                    )
-
-            elif events.event == Status.SSP_POLL_CREDIT:
-                self.print_debug(
-                    f'Credit {events.data1} {events.cc.decode()}')
-                self.events.append(
-                    (events.data1, events.cc.decode(), events.event),
-                )
-
-            elif events.event == Status.SSP_POLL_INCOMPLETE_PAYOUT:
-                self.print_debug(
-                    f'Incomplete payout {events.data1} of {events.data2}'
-                    f' {events.cc.decode()}'
-                )
-
-            elif events.event == Status.SSP_POLL_INCOMPLETE_FLOAT:
-                self.print_debug(
-                    f'Incomplete float {events.data1} of {events.data2}'
-                    f' {events.cc.decode()}'
-                )
-
-            elif events.event == Status.SSP_POLL_FRAUD_ATTEMPT:
-                self.print_debug(
-                    f'Fraud Attempt {events.data1} {events.cc.decode()}'
-                )
-                self.events.append(
-                    (events.data1, events.cc.decode(), events.event),
-                )
-
-            elif events.event == Status.SSP_POLL_CALIBRATION_FAIL:
-                self.print_debug('Calibration fail:')
-                self.print_debug(FailureStatus(events.data1))
-                if events.data1 == FailureStatus.COMMAND_RECAL:
-                    self.print_debug('Trying to run autocalibration')
-                    C_LIBRARY.ssp6_run_calibration(self.sspC)
-
-            self.events.append((0, 0, events.event))
+        for event in self.poll.events:
+            handle_event(self, event)
         self.events.append((0, 0, Status.NO_EVENT))
 
     def system_loop(self):
