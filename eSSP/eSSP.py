@@ -200,7 +200,6 @@ class eSSP:
                 else:
                     # Not theses two, stop the program
                     raise Exception(f'SSP poll error {response}')
-                    exit(1)
             self.parse_poll()
             self.do_actions()
             sleep(0.5)
