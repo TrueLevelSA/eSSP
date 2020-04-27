@@ -35,8 +35,3 @@ SSP_COMMAND* ssp_init(char* port_c, char* addr_c, int debug)
 
     return sspC;
 }
-
-unsigned char* ssp_get_response_data(SSP_COMMAND* sspc)
-{
-    return sspc->ResponseData;
-}
