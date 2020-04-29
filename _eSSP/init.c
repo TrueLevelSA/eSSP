@@ -25,6 +25,7 @@ SSP_COMMAND* ssp_init(char* port_c, char* addr_c, int debug)
 
     if (open_ssp_port(port_c) == 0)
     {
+        free(sspC);
         printf("Port Error\n");
         return NULL;
     }
