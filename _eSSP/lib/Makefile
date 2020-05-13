@@ -13,7 +13,7 @@ CFLAGS_C = $(filter-out -include "sdk.h",$(CFLAGS))
 
 # MAKE_DEP = -MMD -MT $@ -MF $(@:.o=.d)
 
-CFLAGS = -Wall 
+CFLAGS = -Wall -Wextra
 INCLUDES = 
 LDFLAGS =  -s
 RCFLAGS = 
