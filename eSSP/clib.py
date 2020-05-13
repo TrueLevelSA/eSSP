@@ -79,6 +79,23 @@ class SspResponseEnum(Enum):
         return int(obj)
 
 
+class UpdateDeviceResponseEnum(Enum):
+    OK = 0x00
+    FILE_NOT_FOUND = 0x01
+    FILE_ERROR = 0x02
+    INVALID_FILE_TYPE = 0x03
+    PORT_ERROR = 0x04
+    NO_VALIDATOR = 0x05
+    SEND_PROGRAM_CMD_ERROR = 0x06
+    TIMEOUT = 0x07
+    BAD_CHECKSUM = 0x08
+    DEVICE_DID_NOT_ACK = 0x09
+
+    @classmethod
+    def from_param(cls, obj):
+        return int(obj)
+
+
 class SspChannelState(Enum):
     DISABLED = 0x00
     ENABLED = 0x01
@@ -201,3 +218,10 @@ define_function(
 define_function('ssp6_stack_note', SspResponseEnum, CommandPointer)
 define_function('ssp6_sync', SspResponseEnum, CommandPointer)
 define_function('ssp_init', CommandPointer, c_char_p, c_char_p, c_int)
+define_function(
+    'update_device',
+    UpdateDeviceResponseEnum,
+    c_char_p,
+    c_char_p,
+    c_char_p,
+)

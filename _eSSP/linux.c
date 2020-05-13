@@ -71,3 +71,8 @@ int negotiate_ssp_encryption(SSP_COMMAND* sspC, SSP_FULL_KEY* hostKey)
 {
     return NegotiateSSPEncryption(open_port, sspC->SSPAddress, hostKey);
 }
+
+int get_open_port()
+{
+    return open_port;
+}

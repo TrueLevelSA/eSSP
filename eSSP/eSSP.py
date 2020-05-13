@@ -261,3 +261,11 @@ class eSSP:
 
     def disable_validator(self):
         self.actions.put(actions.DisableValidator())
+
+    @staticmethod
+    def update_device(file_path, com_port, ssp_address):
+        return C_LIBRARY.update_device(
+            file_path.encode(),
+            com_port.encode(),
+            ssp_address.encode(),
+        )

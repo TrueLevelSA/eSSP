@@ -7,7 +7,7 @@
 #include "inc/SSPComs.h"
 #endif
 
-static SSP_RESPONSE_ENUM _ssp_return_values(SSP_COMMAND* sspC)
+SSP_RESPONSE_ENUM _ssp_return_values(SSP_COMMAND* sspC)
 {
     // Check for timeout
     if (send_ssp_command(sspC) == 0)

@@ -144,4 +144,6 @@ SSP_RESPONSE_ENUM ssp6_get_note_amount(
         const char* cc);
 SSP_RESPONSE_ENUM ssp6_reject(SSP_COMMAND* sspC);
 
+SSP_RESPONSE_ENUM _ssp_return_values(SSP_COMMAND *sspC);
+
 #endif
