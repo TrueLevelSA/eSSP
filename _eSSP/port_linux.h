@@ -19,4 +19,8 @@ void close_ssp_port();
 int send_ssp_command(SSP_COMMAND* sspC);
 int negotiate_ssp_encryption(SSP_COMMAND* sspC, SSP_FULL_KEY* hostKey);
 
+// get_open_port returns the static variable open_port to be used by
+// the download process.
+int get_open_port();
+
 #endif
